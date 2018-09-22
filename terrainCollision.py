@@ -128,7 +128,7 @@ class Game(object):
 					# Check if the projectile is a one hit
 					if self.projectile.oneHit:
 						self.projectile = None
-						
+					
 	def playerCollision(self):
 		
 		# Iterate over all the terrain
@@ -137,18 +137,23 @@ class Game(object):
 			# If the player has collided with the bounding box
 			if self.player.rect.colliderect(t.bounds):
 				
-				# Check each of the pixels in the terrain
-				for p in t.pixels:
+				# While the player is colliding with a pixel in the current terrain
+				while self.pixelCollision(t):
 					
-					# If the pixel has collided with the projectile
-					if self.player.rect.colliderect(p):
+					# Move the player up by one pixel
+					self.player.rect.y -= 1
 						
-						self.player.y = p.y - self.player.height
-						self.player.gravity = 0
-						
-						# Break the loop
-						break
+	# Function to return true when the player is colliding with a pixel within a bounding box
+	def pixelCollision(self, t):
+		
+		# Iterate over each of the pixels in the terrain and return true if there's a collision
+		for p in t.pixels:
 					
+			# If the pixel has collided with the player
+			if self.player.rect.colliderect(p):
+				return True
+				
+		return False
 		
 	# Function to draw the terrain
 	def drawTerrain(self):
@@ -246,10 +251,7 @@ class Player(object):
 		
 	def update(self):
 			
-		self.y += self.gravity
-		
-		self.rect.x = self.x
-		self.rect.y = self.y
+		self.rect.y += self.gravity
 		
 	def moveRight(self):
 		
@@ -266,11 +268,11 @@ if __name__ == "__main__":
 	g = Game()
 	
 	# Create a terrain object
-	t = Terrain(pygame.Rect(0, g.height - 50, g.width, 50))
+	t = Terrain(pygame.Rect(0, g.height - 4, g.width, 4))
 	
 	# Add some pixels to the terrain
-	for i in range(5, g.width - 5):
-		for j in range(5, 45):
+	for i in range(g.width):
+		for j in range(4):
 			t.addPixel(pygame.Rect(t.bounds.left + i, t.bounds.top + j, 1, 1))
 	
 	# Add the terrain to the game
