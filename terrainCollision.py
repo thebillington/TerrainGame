@@ -156,14 +156,16 @@ class Game(object):
 
 	# Function to read data from file and create terrain objects
 	def readFileToTerrain(self, fileName):
-                terrainList = []
+                
                 # create new file object with read mode
                 file = open(fileName)
                 
                 # create a list of the lines in the text file
                 fileLines = file.read().splitlines()
 
+                #iterate through each line in the file
                 for line in fileLines:
+                        #seperate the values between commas
                         fields = line.split(",")
                         
                         # Create a terrain object
@@ -174,6 +176,7 @@ class Game(object):
                                 for j in range(int(fields[3])):
                                         t.addPixel(pygame.Rect(t.bounds.left + i, t.bounds.top + j, 1, 1))
 
+                        #add to the games terrain
                         self.addTerrain(t)
 	
 				
