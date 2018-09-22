@@ -30,6 +30,8 @@ class Game(object):
 		# Create a list to store all of the projectiles
 		self.projectile = None
 		
+		self.player = Player()
+		
 	# Function to update the game
 	def update(self):
 		
@@ -41,6 +43,8 @@ class Game(object):
 		
 		# Clear the screen
 		self.screen.fill(self.bg)
+		
+		self.updatePlayer()
 		
 		# Check that there is a projectile to draw
 		if not self.projectile == None:
@@ -73,6 +77,13 @@ class Game(object):
 		
 			# Check for projectile collision
 			self.projectileCollision()
+			
+	def updatePlayer(self):
+		
+		self.player.draw(self.screen)
+		
+		self.player.update()
+		self.playerCollision()
 				
 	# Function to check if projectile has collided with any terrain
 	def projectileCollision(self):
@@ -117,6 +128,27 @@ class Game(object):
 					# Check if the projectile is a one hit
 					if self.projectile.oneHit:
 						self.projectile = None
+						
+	def playerCollision(self):
+		
+		# Iterate over all the terrain
+		for t in self.terrain:
+			
+			# If the player has collided with the bounding box
+			if self.player.rect.colliderect(t.bounds):
+				
+				# Check each of the pixels in the terrain
+				for p in t.pixels:
+					
+					# If the pixel has collided with the projectile
+					if self.player.rect.colliderect(p):
+						
+						self.player.y = p.y - self.player.height
+						self.player.gravity = 0
+						
+						# Break the loop
+						break
+					
 		
 	# Function to draw the terrain
 	def drawTerrain(self):
@@ -189,6 +221,43 @@ def pythagoras(xOne, yOne, xTwo, yTwo):
 	
 	# Return the absolute distance
 	return math.sqrt(math.pow(xOne - xTwo, 2) + math.pow(yOne - yTwo, 2))
+	
+class Player(object):
+	
+	def __init__(self):
+		
+		self.image = pygame.image.load('res/player.png')
+		self.rect = self.image.get_rect()
+		
+		self.x = 0
+		self.y = 0
+		
+		self.rect.x = self.x
+		self.rect.y = self.y
+		
+		self.gravity = 10
+		
+		self.width = self.rect.width
+		self.height = self.rect.height
+		
+	def draw(self, surface):
+		
+		surface.blit(self.image, self.rect)
+		
+	def update(self):
+			
+		self.y += self.gravity
+		
+		self.rect.x = self.x
+		self.rect.y = self.y
+		
+	def moveRight(self):
+		
+		self.rect.x += 3
+		
+	def moveLeft(self):
+		
+		self.rect.x -= 3
 				
 # Run an instance of the game
 if __name__ == "__main__":
@@ -197,18 +266,12 @@ if __name__ == "__main__":
 	g = Game()
 	
 	# Create a terrain object
-	t = Terrain(pygame.Rect(200, 200, 100, 50))
+	t = Terrain(pygame.Rect(0, g.height - 50, g.width, 50))
 	
 	# Add some pixels to the terrain
-	for i in range(20, 80):
-		for j in range(10, 40):
+	for i in range(5, g.width - 5):
+		for j in range(5, 45):
 			t.addPixel(pygame.Rect(t.bounds.left + i, t.bounds.top + j, 1, 1))
-			
-	# Create a projectile
-	p = Projectile(pygame.Rect(500, 500, 6, 6), [-3, -7], 0.1, 3, 5, True)
-	
-	# Add the projectile to the game
-	g.setProjectile(p)
 	
 	# Add the terrain to the game
 	g.addTerrain(t)
