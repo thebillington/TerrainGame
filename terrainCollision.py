@@ -27,10 +27,11 @@ class Game(object):
 		# Create a list to store all of the pieces of terrain
 		self.terrain = []
 		
-		# Create a list to store all of the projectiles
+		# Create an object to store the projectile
 		self.projectile = None
 		
-		self.player = Player()
+		# Create a list to store the players
+		self.players = []
 		
 	# Function to update the game
 	def update(self):
@@ -44,7 +45,8 @@ class Game(object):
 		# Clear the screen
 		self.screen.fill(self.bg)
 		
-		self.updatePlayer()
+		# Update the players
+		self.updatePlayers()
 		
 		# Check that there is a projectile to draw
 		if not self.projectile == None:
@@ -78,12 +80,18 @@ class Game(object):
 			# Check for projectile collision
 			self.projectileCollision()
 			
-	def updatePlayer(self):
+	# Function to update the players
+	def updatePlayers(self):
 		
-		self.player.draw(self.screen)
-		
-		self.player.update()
-		self.playerCollision()
+		# For each player
+		for p in self.players:
+			
+			# Draw the player
+			p.draw(self.screen)
+			
+			# Update physics
+			p.update()
+			self.playerCollision()
 				
 	# Function to check if projectile has collided with any terrain
 	def projectileCollision(self):
@@ -128,31 +136,34 @@ class Game(object):
 					# Check if the projectile is a one hit
 					if self.projectile.oneHit:
 						self.projectile = None
-            break
+						break
   
-  # Function to resolve player collisions
+	# Function to resolve player collisions
 	def playerCollision(self):
 		
-		# Iterate over all the terrain
-		for t in self.terrain:
-			
-			# If the player has collided with the bounding box
-			if self.player.rect.colliderect(t.bounds):
+		# For each player
+		for player in self.players:
+		
+			# Iterate over all the terrain
+			for t in self.terrain:
 				
-				# While the player is colliding with a pixel in the current terrain
-				while self.pixelCollision(t):
+				# If the player has collided with the bounding box
+				if player.rect.colliderect(t.bounds):
 					
-					# Move the player up by one pixel
-					self.player.rect.y -= 1
+					# While the player is colliding with a pixel in the current terrain
+					while self.pixelCollision(player, t):
+						
+						# Move the player up by one pixel
+						player.rect.y -= 1
 						
 	# Function to return true when the player is colliding with a pixel within a bounding box
-	def pixelCollision(self, t):
+	def pixelCollision(self, player, terrain):
 		
 		# Iterate over each of the pixels in the terrain and return true if there's a collision
-		for p in t.pixels:
+		for p in terrain.pixels:
 					
 			# If the pixel has collided with the player
-			if self.player.rect.colliderect(p):
+			if player.rect.colliderect(p):
 				return True
 		
     # Return false if there are no collisions
@@ -178,6 +189,12 @@ class Game(object):
 		
 		# Add the terrain
 		self.terrain.append(terrain)
+		
+	# Create a function to add terrain
+	def addPlayer(self, player):
+		
+		# Add the terrain
+		self.players.append(player)
 		
 	# Function to create a projectile
 	def setProjectile(self, projectile):
@@ -256,40 +273,50 @@ def pythagoras(xOne, yOne, xTwo, yTwo):
 	
 	# Return the absolute distance
 	return math.sqrt(math.pow(xOne - xTwo, 2) + math.pow(yOne - yTwo, 2))
-	
+
+# Class to hold the player object
 class Player(object):
 	
-	def __init__(self):
+	# Constructor
+	def __init__(self, x, y, imgRes, gravity, maxSpeed):
 		
-		self.image = pygame.image.load('res/player.png')
+		# Get the player image from the provided resource
+		self.image = pygame.image.load(imgRes)
 		self.rect = self.image.get_rect()
 		
-		self.x = 0
-		self.y = 0
+		# Set the x and y
+		self.rect.x = x
+		self.rect.y = y
 		
-		self.rect.x = self.x
-		self.rect.y = self.y
+		# Set the speed
+		self.speed = 0
 		
-		self.gravity = 10
-		
-		self.width = self.rect.width
-		self.height = self.rect.height
-		
+		# Set the physics variables
+		self.gravity = gravity
+		self.maxSpeed = maxSpeed
+	
+	# Function to draw the player
 	def draw(self, surface):
 		
 		surface.blit(self.image, self.rect)
 		
+	# Function to update the player
 	def update(self):
+		
+		# Check whether the player needs to accelerate
+		if self.speed < self.maxSpeed:
 			
-		self.rect.y += self.gravity
+			# Accelerate
+			self.speed += self.gravity
+			
+		# Move by the speed
+		self.rect.y += self.speed
+	
+	# Function to move the player on the x axis
+	def moveRight(self, dx):
 		
-	def moveRight(self):
-		
-		self.rect.x += 3
-		
-	def moveLeft(self):
-		
-		self.rect.x -= 3
+		# Move the player by dx
+		self.rect.x += dx
 				
 # Run an instance of the game
 if __name__ == "__main__":
@@ -306,6 +333,13 @@ if __name__ == "__main__":
 	# Add the projectile to the game
 	g.setProjectile(p)
 	
+	# Create a player object
+	player = Player(400, 50, 'res/player.png', 0.2, 8)
+	
+	# Add the player to the game
+	g.addPlayer(player)
+	
+	# Read the level data
 	g.readFileToTerrain("test.txt")
 
 	# Game loop
