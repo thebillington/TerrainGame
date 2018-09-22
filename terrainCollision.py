@@ -117,6 +117,7 @@ class Game(object):
 					# Check if the projectile is a one hit
 					if self.projectile.oneHit:
 						self.projectile = None
+						break
 		
 	# Function to draw the terrain
 	def drawTerrain(self):
@@ -124,14 +125,14 @@ class Game(object):
 		# Iterate over all the terrain
 		for t in self.terrain:
 			
-			# Draw the bounding box
-			pygame.draw.rect(self.screen, (255, 0, 0), t.bounds, 1)
-			
 			# For each pixel in the terrain
 			for p in t.pixels:
 				
 				# Light the pixel
 				pygame.draw.rect(self.screen, (0, 0, 0), p)
+
+			# Draw the bounding box
+			pygame.draw.rect(self.screen, (255, 0, 0), t.bounds, 1)
 		
 	# Create a function to add terrain
 	def addTerrain(self, terrain):
@@ -151,6 +152,33 @@ class Game(object):
 			if event.type == pygame.QUIT:
 				pygame.quit()
 				sys.exit()
+				
+
+	# Function to read data from file and create terrain objects
+	def readFileToTerrain(self, fileName):
+                
+                # create new file object with read mode
+                file = open(fileName)
+                
+                # create a list of the lines in the text file
+                fileLines = file.read().splitlines()
+
+                #iterate through each line in the file
+                for line in fileLines:
+                        #seperate the values between commas
+                        fields = line.split(",")
+                        
+                        # Create a terrain object
+                        t = Terrain(pygame.Rect(int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3])))
+	
+                        # Add some pixels to the terrain
+                        for i in range(int(fields[2])):
+                                for j in range(int(fields[3])):
+                                        t.addPixel(pygame.Rect(t.bounds.left + i, t.bounds.top + j, 1, 1))
+
+                        #add to the games terrain
+                        self.addTerrain(t)
+	
 				
 # Class to hold all the 'pixels' in a piece of terrain
 class Terrain(object):
@@ -189,30 +217,22 @@ def pythagoras(xOne, yOne, xTwo, yTwo):
 	
 	# Return the absolute distance
 	return math.sqrt(math.pow(xOne - xTwo, 2) + math.pow(yOne - yTwo, 2))
+
 				
 # Run an instance of the game
 if __name__ == "__main__":
 	
 	# Create a game object
 	g = Game()
-	
-	# Create a terrain object
-	t = Terrain(pygame.Rect(200, 200, 100, 50))
-	
-	# Add some pixels to the terrain
-	for i in range(20, 80):
-		for j in range(10, 40):
-			t.addPixel(pygame.Rect(t.bounds.left + i, t.bounds.top + j, 1, 1))
 			
 	# Create a projectile
-	p = Projectile(pygame.Rect(500, 500, 6, 6), [-3, -7], 0.1, 3, 5, True)
+	p = Projectile(pygame.Rect(500, 500, 6, 6), [-3, -7.33], 0.1, 3, 5, False)
 	
 	# Add the projectile to the game
 	g.setProjectile(p)
 	
-	# Add the terrain to the game
-	g.addTerrain(t)
-	
+	g.readFileToTerrain("test.txt")
+
 	# Game loop
 	while True:
 		g.update()
