@@ -33,6 +33,15 @@ class Game(object):
 		# Create a list to store the players
 		self.players = []
 		
+	# Function to draw the initial screen
+	def drawMap(self):
+	
+		# Clear the screen
+		self.screen.fill(self.bg)
+		
+		# Draw all terrain
+		self.drawTerrain()
+		
 	# Function to update the game
 	def update(self):
 		
@@ -42,9 +51,6 @@ class Game(object):
 		# Update the proejectile
 		self.updateProjectile()
 		
-		# Clear the screen
-		self.screen.fill(self.bg)
-		
 		# Update the players
 		self.updatePlayers()
 		
@@ -53,9 +59,6 @@ class Game(object):
 		
 			# Draw the projectile
 			pygame.draw.rect(self.screen, (0, 255, 50), self.projectile.rect)
-		
-		# Draw all terrain
-		self.drawTerrain()
 		
 		# Update the display
 		pygame.display.flip()
@@ -68,6 +71,9 @@ class Game(object):
 		
 		# Check if there is a projectile
 		if not self.projectile == None:
+		
+			# Draw the projectile
+			pygame.draw.rect(self.screen, self.bg, self.projectile.rect)
 		
 			# Move the projectile
 			self.projectile.rect.left += self.projectile.speed[0]
@@ -86,12 +92,15 @@ class Game(object):
 		# For each player
 		for p in self.players:
 			
-			# Draw the player
-			p.draw(self.screen)
+			# Remove the player current position d
+			pygame.draw.rect(self.screen, self.bg, p.rect)
 			
 			# Update physics
 			p.update()
 			self.playerCollision()
+			
+			# Redraw the player
+			self.screen.blit(p.image, p.rect)
 				
 	# Function to check if projectile has collided with any terrain
 	def projectileCollision(self):
@@ -105,8 +114,6 @@ class Game(object):
 			
 			# If the projectile has collided with the bounding box
 			if self.projectile.rect.colliderect(t.bounds):
-				
-				print("Bounding box collision...")
 				
 				# Check each of the pixels in the terrain
 				for p in t.pixels:
@@ -132,6 +139,11 @@ class Game(object):
 							
 							# Delete the pixel
 							t.pixels.pop(i)
+					
+					# Redraw this terrain
+					pygame.draw.rect(self.screen, self.bg, t.bounds)
+					for p in t.pixels:
+						pygame.draw.rect(self.screen, (0, 0, 0), p)
 					
 					# Check if the projectile is a one hit
 					if self.projectile.oneHit:
@@ -182,7 +194,7 @@ class Game(object):
 				pygame.draw.rect(self.screen, (0, 0, 0), p)
 
 			# Draw the bounding box
-			pygame.draw.rect(self.screen, (255, 0, 0), t.bounds, 1)
+			#pygame.draw.rect(self.screen, (255, 0, 0), t.bounds, 1)
 		
 	# Create a function to add terrain
 	def addTerrain(self, terrain):
@@ -295,11 +307,6 @@ class Player(object):
 		# Set the physics variables
 		self.gravity = gravity
 		self.maxSpeed = maxSpeed
-	
-	# Function to draw the player
-	def draw(self, surface):
-		
-		surface.blit(self.image, self.rect)
 		
 	# Function to move the player
 	def move(self, x, y):
@@ -345,13 +352,16 @@ if __name__ == "__main__":
 	g.setProjectile(p)
 	
 	# Create a player object
-	player = Player(400, 50, 'res/player.png', 0.2, 8)
+	player = Player(400, 50, 'res/player.png', 0.1, 6)
 	
 	# Add the player to the game
 	g.addPlayer(player)
 	
 	# Read the level data
 	g.readFileToTerrain("test.txt")
+	
+	# Draw the map
+	g.drawMap()
 
 	# Game loop
 	while loopBool == True:
