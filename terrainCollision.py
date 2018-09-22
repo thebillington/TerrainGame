@@ -2,6 +2,7 @@
 import pygame
 from pygame.locals import *
 import sys
+import math
 
 # Create a game class
 class Game(object):
@@ -38,6 +39,9 @@ class Game(object):
 		# Update the proejectile
 		self.updateProjectile()
 		
+		# Check for projectile collision
+		self.projectileCollision()
+		
 		# Clear the screen
 		self.screen.fill(self.bg)
 		
@@ -58,8 +62,6 @@ class Game(object):
 		
 		# Check if there is a projectile
 		if not self.projectile == None:
-			
-			print(self.projectile.rect)
 		
 			# Move the projectile
 			self.projectile.rect.left += self.projectile.speed[0]
@@ -68,6 +70,44 @@ class Game(object):
 			# Update gravity
 			if self.projectile.speed[1] < self.projectile.maxSpeed:
 				self.projectile.speed[1] += self.projectile.gravity
+				
+	# Function to check if projectile has collided with any terrain
+	def projectileCollision(self):
+		
+		# Set px and py to none
+		px = None
+		py = None
+		
+		# Iterate over all the terrain
+		for t in self.terrain:
+			
+			# If the projectile has collided with the bounding box
+			if self.projectile.rect.colliderect(t.bounds):
+				
+				# Check each of the pixels in the terrain
+				for p in t.pixels:
+					
+					# If the pixel has collided with the projectile
+					if self.projectile.rect.colliderect(p):
+						
+						# Store the pixels location
+						px = p.left
+						py = p.top
+						
+						# Break the loop
+						break
+						
+				# Check whether there was a collision between any pixels
+				if not px == None:
+					
+					# Check each pixel to see whether it collided, and if so delete it
+					for i in range(len(t.pixels) - 1, -1, -1):
+						
+						# If the pixel is in range of the blast zone
+						if pythagoras(t.pixels[i].left, t.pixels[i].top, px, py) < self.projectile.blastRadius:
+							
+							# Delete the pixel
+							t.pixels.pop(i)
 		
 	# Function to draw the terrain
 	def drawTerrain(self):
@@ -125,13 +165,20 @@ class Terrain(object):
 class Projectile(object):
 	
 	# Constructor
-	def __init__(self, rect, speed, gravity, maxSpeed):
+	def __init__(self, rect, speed, gravity, maxSpeed, collisionRadius):
 		
 		# Fields
 		self.rect = rect
 		self.speed = speed
 		self.gravity = gravity
 		self.maxSpeed = maxSpeed
+		self.blastRadius = collisionRadius
+		
+# Pythagoras function
+def pythagoras(xOne, yOne, xTwo, yTwo):
+	
+	# Return the absolute distance
+	return math.sqrt(math.pow(xOne - xTwo, 2) + math.pow(yOne - yTwo, 2))
 				
 # Run an instance of the game
 if __name__ == "__main__":
@@ -148,7 +195,7 @@ if __name__ == "__main__":
 			t.addPixel(pygame.Rect(t.bounds.left + i, t.bounds.top + j, 1, 1))
 			
 	# Create a projectile
-	p = Projectile(pygame.Rect(500, 500, 10, 10), [-3, -7], 0.1, 3)
+	p = Projectile(pygame.Rect(500, 500, 6, 6), [-3, -7], 0.1, 3, 5)
 	
 	# Add the projectile to the game
 	g.setProjectile(p)
