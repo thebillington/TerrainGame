@@ -39,14 +39,14 @@ class Game(object):
 		# Update the proejectile
 		self.updateProjectile()
 		
-		# Check for projectile collision
-		self.projectileCollision()
-		
 		# Clear the screen
 		self.screen.fill(self.bg)
 		
-		# Draw the projectile
-		pygame.draw.rect(self.screen, (0, 255, 50), self.projectile.rect)
+		# Check that there is a projectile to draw
+		if not self.projectile == None:
+		
+			# Draw the projectile
+			pygame.draw.rect(self.screen, (0, 255, 50), self.projectile.rect)
 		
 		# Draw all terrain
 		self.drawTerrain()
@@ -70,6 +70,9 @@ class Game(object):
 			# Update gravity
 			if self.projectile.speed[1] < self.projectile.maxSpeed:
 				self.projectile.speed[1] += self.projectile.gravity
+		
+			# Check for projectile collision
+			self.projectileCollision()
 				
 	# Function to check if projectile has collided with any terrain
 	def projectileCollision(self):
@@ -83,6 +86,8 @@ class Game(object):
 			
 			# If the projectile has collided with the bounding box
 			if self.projectile.rect.colliderect(t.bounds):
+				
+				print("Bounding box collision...")
 				
 				# Check each of the pixels in the terrain
 				for p in t.pixels:
@@ -108,6 +113,10 @@ class Game(object):
 							
 							# Delete the pixel
 							t.pixels.pop(i)
+					
+					# Check if the projectile is a one hit
+					if self.projectile.oneHit:
+						self.projectile = None
 		
 	# Function to draw the terrain
 	def drawTerrain(self):
@@ -165,7 +174,7 @@ class Terrain(object):
 class Projectile(object):
 	
 	# Constructor
-	def __init__(self, rect, speed, gravity, maxSpeed, collisionRadius):
+	def __init__(self, rect, speed, gravity, maxSpeed, collisionRadius, oneHit):
 		
 		# Fields
 		self.rect = rect
@@ -173,6 +182,7 @@ class Projectile(object):
 		self.gravity = gravity
 		self.maxSpeed = maxSpeed
 		self.blastRadius = collisionRadius
+		self.oneHit = oneHit
 		
 # Pythagoras function
 def pythagoras(xOne, yOne, xTwo, yTwo):
@@ -195,7 +205,7 @@ if __name__ == "__main__":
 			t.addPixel(pygame.Rect(t.bounds.left + i, t.bounds.top + j, 1, 1))
 			
 	# Create a projectile
-	p = Projectile(pygame.Rect(500, 500, 6, 6), [-3, -7], 0.1, 3, 5)
+	p = Projectile(pygame.Rect(500, 500, 6, 6), [-3, -7], 0.1, 3, 5, True)
 	
 	# Add the projectile to the game
 	g.setProjectile(p)
