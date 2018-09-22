@@ -89,14 +89,49 @@ class Game(object):
 	# Function to update the players
 	def updatePlayers(self):
 		
-		# For each player
+		# Check pressed keys
+		keys = pygame.key.get_pressed()
+				
+		# If left arrow
+		if keys[K_LEFT]:
+			
+			# Remove the player current position
+			pygame.draw.rect(self.screen, self.bg, self.players[0].rect)
+			
+			# Move player 1 left
+			self.players[0].rect.x -= self.players[0].speedX
+			
+		# If right arrow
+		if keys[K_RIGHT]:
+			
+			# Remove the player current position
+			pygame.draw.rect(self.screen, self.bg, self.players[0].rect)
+			
+			# Move player 1 right
+			self.players[0].rect.x += self.players[0].speedX
+			
+		# If up arrow
+		if keys[K_UP]:
+			
+			# Have to add jump functionality
+			self.players[0].jump()
+			
+		# If down arrow
+		if keys[K_DOWN]:
+			
+			# Have to add bomb functionality
+			print("Bomb dropped")
+		
+		# Update each player
 		for p in self.players:
 			
 			# Remove the player current position d
 			pygame.draw.rect(self.screen, self.bg, p.rect)
 			
-			# Update physics
+			# Update the player
 			p.update()
+			
+			# Update physics
 			self.playerCollision()
 			
 			# Redraw the player
@@ -164,6 +199,9 @@ class Game(object):
 					
 					# While the player is colliding with a pixel in the current terrain
 					while self.pixelCollision(player, t):
+						
+						# Set player to not be jumping
+						player.jumping = False
 						
 						# Move the player up by one pixel
 						player.rect.y -= 1
@@ -290,7 +328,7 @@ def pythagoras(xOne, yOne, xTwo, yTwo):
 class Player(object):
 	
 	# Constructor
-	def __init__(self, x, y, imgRes, gravity, maxSpeed):
+	def __init__(self, x, y, imgRes):
 		
 		# Get the player image from the provided resource
 		self.image = pygame.image.load(imgRes)
@@ -301,18 +339,16 @@ class Player(object):
 		self.rect.y = y
 		
 		# Set the speed
-		self.speedX = 0
+		self.speedX = 2
 		self.speedY = 0
 		
 		# Set the physics variables
-		self.gravity = gravity
-		self.maxSpeed = maxSpeed
+		self.jumpSpeed = -2
+		self.gravity = 0.1
+		self.maxSpeed = 6
 		
-	# Function to move the player
-	def move(self, x, y):
-		#set the speed of player by specifed x and y values
-		self.speedX += x
-		self.speedY += y
+		# Check whether the player is jumping
+		self.jumping = True
 		
 	# Function to update the player
 	def update(self):
@@ -323,21 +359,23 @@ class Player(object):
 			# Accelerate
 			self.speedY += self.gravity
 			
-		# Move by the speed
-		self.rect.x += self.speedX
+		# Move the player on the y axis
 		self.rect.y += self.speedY
-	
-	#IM TOO STUPID FOR THIS
-	#def dropBomb(self):
-	#
-	#	if direction == "left":
-	#		p = project(pygame.Rect(self.x, self.y, 6, 6), [-3, -7.33], 0.1, 3, 8, True)
+		
+	# Function to make a player jump
+	def jump(self):
+		
+		# If not already jumping
+		if not self.jumping:
+			
+			# Set jumping to true
+			self.jumping = True
+		
+			# Set the ySpeed to jump speed
+			self.speedY = self.jumpSpeed
 	
 # Run an instance of the game
 if __name__ == "__main__":
-
-	# a boolean for the game loop
-	loopBool = True
 	
 	# Create a game object
 	g = Game()
@@ -352,7 +390,7 @@ if __name__ == "__main__":
 	g.setProjectile(p)
 	
 	# Create a player object
-	player = Player(400, 50, 'res/player.png', 0.1, 6)
+	player = Player(400, 50, 'res/player.png')
 	
 	# Add the player to the game
 	g.addPlayer(player)
@@ -364,43 +402,5 @@ if __name__ == "__main__":
 	g.drawMap()
 
 	# Game loop
-	while loopBool == True:
-		#uses pygame event library to check for events
-		for event in pygame.event.get():
-			# if the event is the X in top right being pressed
-			if event.type == pygame.QUIT:
-				# quit game and exit the game loop
-				pygame.quit(); 
-				sys.exit()
-				loopBool == False
-			# if a key has been pressed down
-			if event.type == pygame.KEYDOWN:
-				#if left arrow
-				if event.key == pygame.K_LEFT:
-					#move player left
-					player.move(-2,0)
-				# if right arrow
-				if event.key == pygame.K_RIGHT:
-					# move player right
-					player.move(2,0)
-				# if up arrow
-				if event.key == pygame.K_UP:
-					# have to add jump functionality
-					print("jump")
-				# if down arrow
-				if event.key == pygame.K_DOWN:
-					# have to add bomb functionality
-					print("Bomb dropped")
-			
-			# if a key has been released
-			if event.type == pygame.KEYUP:
-				# if left arrow
-				if event.key == pygame.K_LEFT:
-					# set the speedX variable back to 0
-					player.move(2,0)
-				# if the right arrow
-				if event.key == pygame.K_RIGHT:
-					# set the speedX variable back to 0
-					player.move(-2,0)
-
+	while True:
 		g.update()
