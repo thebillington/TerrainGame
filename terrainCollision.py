@@ -61,6 +61,9 @@ class Game(object):
 		# Update the players
 		self.updatePlayers()
 		
+		# Update the powerups
+		self.updatePowerups()
+		
 		# For each projectile
 		for p in self.projectiles:
 			
@@ -131,22 +134,19 @@ class Game(object):
 		self.powerups.append(choice(self.possPowerups)(t.bounds.x + randint(-50, 50), t.bounds.y + randint(-50, 50)))
 	
 	# Function to check for powerup collisions
-	def updatePowerups():
+	def updatePowerups(self):
 		
 		# Look at each powerup
 		for powerup in self.powerups:
-			
-			# If the powerup is active
-			if powerup.active:
 				
-				# Look at each player
-				for player in self.players:
+			# Look at each player
+			for player in self.players:
+				
+				# If the player hits the powerup
+				if powerup.rect.colliderect(player.rect):
 					
-					# If the player hits the powerup
-					if powerup.rect.colliderect(player.rect):
-						
-						# Powerup the player
-						powerup.power(player)
+					# Powerup the player
+					powerup.power(player)
 		
 	# Function to check if projectile has collided with any terrain
 	def projectileCollisions(self):
@@ -408,7 +408,7 @@ class Player(object):
 		self.blastRadius = 8
 		
 		# Store the number of hits a projectile gets
-		self.hits = 1
+		self.uses = 1
 		
 		# Store the number of uses the current powerup gets
 		self.powerupUses = 0
@@ -500,7 +500,7 @@ class Player(object):
 		if self.cooldown == 10:
 			
 			# Create a projectile
-			p = Projectile(pygame.Rect(self.rect.x + 3, self.rect.y, 6, 6), [self.direction, self.projectileY], 0.1, 3, self.blastRadius, self.hits)
+			p = Projectile(pygame.Rect(self.rect.x + 3, self.rect.y, 6, 6), [self.direction, self.projectileY], 0.1, 3, self.blastRadius, self.uses)
 				
 			# Add the projectile to the game
 			g.addProjectile(p)
@@ -526,6 +526,8 @@ class Powerup(object):
 		self.rect.x = x
 		self.rect.y = y
 		self.colour = colour
+		self.blastRadius = blastRadius
+		self.uses = uses
 	
 	# Draw the powerup on screen
 	def draw(self, surface):
