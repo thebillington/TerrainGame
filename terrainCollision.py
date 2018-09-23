@@ -131,22 +131,29 @@ class Game(object):
 		t = choice(self.terrain)
 		
 		# Choose a random powerup and create it
-		self.powerups.append(choice(self.possPowerups)(t.bounds.x + randint(-50, 50), t.bounds.y + randint(-50, 50)))
+		pup = choice(self.possPowerups)
+		self.powerups.append(choice(self.possPowerups)(t.bounds.x + (t.bounds.width / 2) + randint(t.bounds.width / 2, t.bounds.width / 2), t.bounds.y + randint(-50, 50)))
 	
 	# Function to check for powerup collisions
 	def updatePowerups(self):
-		
-		# Look at each powerup
-		for powerup in self.powerups:
 				
-			# Look at each player
-			for player in self.players:
+		# Look at each player
+		for player in self.players:
+		
+			# Look at each powerup
+			for i in range(len(self.powerups) - 1, -1, -1):
 				
 				# If the player hits the powerup
-				if powerup.rect.colliderect(player.rect):
+				if self.powerups[i].rect.colliderect(player.rect):
 					
 					# Powerup the player
-					powerup.power(player)
+					self.powerups[i].power(player)
+					
+					# Cover with background colour
+					pygame.draw.rect(self.screen, self.bg, self.powerups[i].rect)
+					
+					# Delete the powerup
+					self.powerups.pop(i)
 		
 	# Function to check if projectile has collided with any terrain
 	def projectileCollisions(self):
@@ -396,7 +403,7 @@ class Player(object):
 		# Set the physics variables
 		self.jumpSpeed = -2
 		self.gravity = 0.1
-		self.maxSpeed = 6
+		self.maxSpeed = 3
 		
 		# Check whether the player is jumping
 		self.jumping = True
@@ -408,10 +415,10 @@ class Player(object):
 		self.blastRadius = 8
 		
 		# Store the number of hits a projectile gets
-		self.uses = 1
+		self.hits = 1
 		
 		# Store the number of uses the current powerup gets
-		self.powerupUses = 0
+		self.uses = 0
 		
 		# Store the y power of projectiles
 		self.projectileY = -3
@@ -500,12 +507,22 @@ class Player(object):
 		if self.cooldown == 10:
 			
 			# Create a projectile
-			p = Projectile(pygame.Rect(self.rect.x + 3, self.rect.y, 6, 6), [self.direction, self.projectileY], 0.1, 3, self.blastRadius, self.uses)
+			p = Projectile(pygame.Rect(self.rect.x + 3, self.rect.y, 6, 6), [self.direction, self.projectileY], 0.1, 3, self.blastRadius, self.hits)
 				
 			# Add the projectile to the game
 			g.addProjectile(p)
 			
+			# Set the cooldown to start
 			self.cooldown = 0
+			
+		# Take one off the number of uses left
+		self.uses -= 1
+		
+		# Check uses
+		if self.uses == 0:
+			self.hits = 1
+			self.blastRadius = 8
+		
 			
 	# Check the cooldown for each player
 	def bombCooldown(self):
@@ -518,7 +535,7 @@ class Player(object):
 class Powerup(object):
 	
 	#Constructor
-	def __init__(self, image, x, y, blastRadius, uses, colour):
+	def __init__(self, image, x, y, hits, blastRadius, uses, colour):
 		
 		# Store fields
 		self.image = pygame.image.load(image)
@@ -526,6 +543,7 @@ class Powerup(object):
 		self.rect.x = x
 		self.rect.y = y
 		self.colour = colour
+		self.hits = hits
 		self.blastRadius = blastRadius
 		self.uses = uses
 	
@@ -540,6 +558,7 @@ class Powerup(object):
 	
 	# Activate the powerup for a given player
 	def power(self, player):
+		player.hits = self.hits
 		player.uses = self.uses
 		player.blastRadius = self.blastRadius
 
@@ -548,14 +567,14 @@ class DrillPowerup(Powerup):
 	
 	# Call the parent constructor
 	def __init__(self, x, y):
-		super(DrillPowerup, self).__init__('res/powerUp1.png', x, y, 8, 5, (0, 255, 0))
+		super(DrillPowerup, self).__init__('res/powerUp1.png', x, y, 5, 8, 3, (0, 255, 0))
 
 # Create a powerup to nuke a large portion of the terrain
 class NukePowerup(Powerup):
 	
 	# Call the parent constructor
 	def __init__(self, x, y):
-		super(NukePowerup, self).__init__('res/powerUp1.png', x, y, 30, 2, (0, 100, 160))
+		super(NukePowerup, self).__init__('res/powerUp1.png', x, y, 1, 30, 1, (0, 100, 160))
 	
 # Run an instance of the game
 if __name__ == "__main__":
