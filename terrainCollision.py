@@ -3,6 +3,7 @@ import pygame
 from pygame.locals import *
 import sys
 import math
+from random import choice, randint
 
 # Create a game class
 class Game(object):
@@ -30,9 +31,13 @@ class Game(object):
 		# Create a list to store the players
 		self.players = []
 		
-		self.powerups = [RadiusPowerup(pygame.image.load('res/powerUp1.png')), HitsPowerup(pygame.image.load('res/powerUp2.png'))]
-		self.powerups[1].setPos(400, 100)
+		# List to store the powerups
+		self.powerups = []
 		
+		# List to store the available powerups constructors
+		self.possPowerups = [DrillPowerup, NukePowerup]
+		
+		# List to store the projectiles
 		self.projectiles = []
 		
 	# Function to draw the initial screen
@@ -63,11 +68,8 @@ class Game(object):
 			pygame.draw.rect(self.screen, (0, 0, 255), p.rect)
 		
 		# Draw the powerups
-		for x in self.powerups:
-			
-			if x.active:
-				
-				x.draw(self.screen)
+		for p in self.powerups:
+			p.draw(self.screen)
 		
 		# Update the display
 		pygame.display.flip()
@@ -105,7 +107,7 @@ class Game(object):
 		for p in self.players:
 			
 			# Check for key presses and pass in this game object
-			player.control(keys, self)
+			p.control(keys, self)
 			
 			# Remove the player current position d
 			pygame.draw.rect(self.screen, self.bg, p.rect)
@@ -118,6 +120,15 @@ class Game(object):
 			
 			# Redraw the player
 			self.screen.blit(p.image, p.rect)
+			
+	# Function to spawn a powerup
+	def spawnPowerup(self):
+		
+		# Choose a random piece of terrain
+		t = choice(self.terrain)
+		
+		# Choose a random powerup and create it
+		self.powerups.append(choice(self.possPowerups)(t.bounds.x + randint(-50, 50), t.bounds.y + randint(-50, 50)))
 	
 	# Function to check for powerup collisions
 	def updatePowerups():
@@ -226,8 +237,9 @@ class Game(object):
 						
 						# Check if dy is greater than 5
 						if dy > 6:
-							player.rect.y += dy
 							player.rect.x -= player.direction * player.hzSpeed
+							while self.pixelCollision(player, t):
+								player.rect.y -= 1
 							break
 							
 					# If collided with this wall, redraw it
@@ -247,7 +259,7 @@ class Game(object):
 			if player.rect.colliderect(p):
 				return True
 		
-    # Return false if there are no collisions
+		# Return false if there are no collisions
 		return False
 		
 	# Function to draw the terrain
@@ -506,48 +518,42 @@ class Player(object):
 class Powerup(object):
 	
 	#Constructor
-	def __init__(self, image, x=0, y=0):
+	def __init__(self, image, x, y, blastRadius, uses, colour):
 		
-		self.image = image
+		# Store fields
+		self.image = pygame.image.load(image)
 		self.rect = self.image.get_rect()
-		
 		self.rect.x = x
 		self.rect.y = y
-		
-		self.active = True
-		
+		self.colour = colour
+	
+	# Draw the powerup on screen
 	def draw(self, surface):
-		
 		surface.blit(self.image, self.rect)
-		
+	
+	# Set the position of the powerup
 	def setPos(self, x, y):
-		
 		self.rect.x = x
 		self.rect.y = y
-		
-class RadiusPowerup(Powerup):
 	
-	def __init__(self, image, uses=3, x=0, y=0):
-		super(RadiusPowerup, self).__init__(image, x, y)
-		
-		self.uses = uses
-		
+	# Activate the powerup for a given player
 	def power(self, player):
-		
-		player.uses[0] = self.uses
-		player.uses[1] = 0
-		
-class HitsPowerup(Powerup):
+		player.uses = self.uses
+		player.blastRadius = self.blastRadius
+
+# Create a powerup to drill through multiple pieces of terrain
+class DrillPowerup(Powerup):
 	
-	def __init__(self, image, uses=3, x=0, y=0):
-		super(HitsPowerup, self).__init__(image, x, y)
-		
-		self.uses = uses
-		
-	def power(self, player):
-		
-		player.uses[1] = self.uses
-		player.uses[0] = 0
+	# Call the parent constructor
+	def __init__(self, x, y):
+		super(DrillPowerup, self).__init__('res/powerUp1.png', x, y, 8, 5, (0, 255, 0))
+
+# Create a powerup to nuke a large portion of the terrain
+class NukePowerup(Powerup):
+	
+	# Call the parent constructor
+	def __init__(self, x, y):
+		super(NukePowerup, self).__init__('res/powerUp1.png', x, y, 30, 2, (0, 100, 160))
 	
 # Run an instance of the game
 if __name__ == "__main__":
@@ -567,6 +573,8 @@ if __name__ == "__main__":
 	
 	# Read the level data
 	g.readFileToTerrain("test.txt")
+	
+	g.spawnPowerup()
 	
 	# Draw the map
 	g.drawMap()
