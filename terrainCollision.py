@@ -100,78 +100,12 @@ class Game(object):
 		
 		# Check pressed keys
 		keys = pygame.key.get_pressed()
-				
-		# If left arrow
-		if keys[K_LEFT]:
-			
-			# Set speed to move left
-			self.players[0].direction = -1
-			
-		# If right arrow
-		elif keys[K_RIGHT]:
-			
-			# Set speed to move right
-			self.players[0].direction = 1
-			
-		# Otherwise reset player speed
-		else:
-			
-			# Set speed to 0
-			self.players[0].direction = 0
-			
-		# If up arrow
-		if keys[K_UP]:
-			
-			# Have to add jump functionality
-			self.players[0].jump()
-			
-		# If down arrow
-		if keys[K_DOWN]:
-			
-			self.fire(0)
-				
-		# If a key
-		if keys[K_a]:
-			
-			# Move the player to the left
-			self.players[1].direction = -1
-			
-		# Else if d key
-		elif keys[K_d]:
-			
-			# Move the player to the left
-			self.players[1].direction = 1
-		
-		# If neither a or d are pressed
-		else:
-			
-			# Stop all player movment
-			self.players[1].direction = 0
-			
-		# Check the w key
-		if keys[K_w]:
-			
-			#Peform jump
-			self.players[1].jump()
-			
-		# Check the down key
-		if keys[K_s]:
-			
-			# Need to add bomb functionality
-			self.fire(1)
-		
-		for powerup in self.powerups:
-			
-			if powerup.active:
-			
-				for player in self.players:
-				
-					if powerup.rect.colliderect(player.rect):
-					
-						powerup.power(player)
 					
 		# Update each player
 		for p in self.players:
+			
+			# Check for key presses and pass in this game object
+			player.control(keys, self)
 			
 			# Remove the player current position d
 			pygame.draw.rect(self.screen, self.bg, p.rect)
@@ -184,29 +118,24 @@ class Game(object):
 			
 			# Redraw the player
 			self.screen.blit(p.image, p.rect)
-			
-	def fire(self, x):
+	
+	# Function to check for powerup collisions
+	def updatePowerups():
 		
-		if self.players[x].bombCooldown():
+		# Look at each powerup
+		for powerup in self.powerups:
 			
-				# Create a projectile
-				p = Projectile(pygame.Rect(self.players[x].rect.x + 3, self.players[x].rect.y, 6, 6), [self.players[x].direction, 0], 0.1, 3, self.players[x].blastRadius, self.players[x].hits)
+			# If the powerup is active
+			if powerup.active:
 				
-				if not self.players[x].uses[0] == 0:
-					self.players[x].uses[0] -= 1
+				# Look at each player
+				for player in self.players:
 					
-				if self.players[x].uses[0] == 0:
-					self.players[x].blastRadius = 8
-					
-				if not self.players[x].uses[1] == 0:
-					self.players[x].uses[1] -= 1
-					
-				if self.players[x].uses[1] == 0:
-					self.players[x].hits = 0
-					
-				g.addProjectile(p)
-				
-				self.players[x].ableToFire = False
+					# If the player hits the powerup
+					if powerup.rect.colliderect(player.rect):
+						
+						# Powerup the player
+						powerup.power(player)
 		
 	# Function to check if projectile has collided with any terrain
 	def projectileCollisions(self):
@@ -254,12 +183,13 @@ class Game(object):
 						for p in t.pixels:
 							pygame.draw.rect(self.screen, (0, 0, 0), p)
 						
+						# Reduce one from the number of hits left for this projectile
+						self.projectiles[i].hits -= 1
+						
 						# Check if the projectile is a one hit
 						if self.projectiles[i].hits == 0:
 							self.projectiles.pop(i)
 							break
-							
-						self.projectiles[i].hits -= 1
   
 	# Function to resolve player collisions
 	def playerCollision(self):
@@ -305,6 +235,7 @@ class Game(object):
 						pygame.draw.rect(self.screen, self.bg, t.bounds)
 						for p in t.pixels:
 							pygame.draw.rect(self.screen, (0, 0, 0), p)
+						self.screen.blit(player.image, player.rect)
 						
 	# Function to return true when the player is colliding with a pixel within a bounding box
 	def pixelCollision(self, player, terrain):
@@ -463,16 +394,27 @@ class Player(object):
 		
 		# Create a int to hold the blast radius of inpacts
 		self.blastRadius = 8
-		# Create an array to hold the two types of powerups uses
-		self.uses = [0, 0]
+		
+		# Store the number of hits a projectile gets
+		self.hits = 1
+		
+		# Store the number of uses the current powerup gets
+		self.powerupUses = 0
+		
+		# Store the y power of projectiles
+		self.projectileY = -3
 		
 		# An int to stop the bombs from being spamed multiple times
 		self.cooldown = 0
 		
-		# An int to hold how many times a projectile can hit before deipersing
-		self.hits = 0
+	# Function to setup key presses
+	def setupKeys(self, left, right, up, down):
 		
-		self.ableToFire = True
+		# Setup fields
+		self.left = left
+		self.right = right
+		self.up = up
+		self.down = down
 		
 	# Function to update the player
 	def update(self):
@@ -491,11 +433,41 @@ class Player(object):
 		self.rect.x += self.speedX
 		self.rect.y += self.speedY
 			
-		if self.uses[0] >= 1:
-			self.blastRadius = 20
+		# Update bomb cooldown
+		self.bombCooldown()
+	
+	# Create a controller for the player
+	def control(self, keys, g):
+				
+		# If left arrow
+		if keys[self.left]:
 			
-		if self.uses[1] >= 1:
-			self.hits = 1
+			# Set speed to move left
+			self.direction = -1
+			
+		# If right arrow
+		elif keys[self.right]:
+			
+			# Set speed to move right
+			self.direction = 1
+			
+		# Otherwise reset player speed
+		else:
+			
+			# Set speed to 0
+			self.direction = 0
+			
+		# If up arrow
+		if keys[self.up]:
+			
+			# Have to add jump functionality
+			self.jump()
+			
+		# If down arrow
+		if keys[self.down]:
+			
+			# Fire a projectile
+			self.fire(g)
 		
 	# Function to make a player jump
 	def jump(self):
@@ -508,25 +480,27 @@ class Player(object):
 		
 			# Set the ySpeed to jump speed
 			self.speedY = self.jumpSpeed
-
-	def bombCooldown(self):
-		
-		if not self.ableToFire:
-		
-			if not self.cooldown == 10:
-				
-				self.cooldown += 1
 			
+	# Function to fire a projectile
+	def fire(self, g):
+		
+		# Check whether we can fire
 		if self.cooldown == 10:
 			
-			self.ableToFire = True
+			# Create a projectile
+			p = Projectile(pygame.Rect(self.rect.x + 3, self.rect.y, 6, 6), [self.direction, self.projectileY], 0.1, 3, self.blastRadius, self.hits)
+				
+			# Add the projectile to the game
+			g.addProjectile(p)
+			
 			self.cooldown = 0
 			
-		if self.ableToFire:
-			
-			return True
-			
-		return False
+	# Check the cooldown for each player
+	def bombCooldown(self):
+		
+		# Check whether or not we can fire
+		if not self.cooldown == 10:
+			self.cooldown += 1
 
 # Create the powerup class		
 class Powerup(object):
@@ -584,6 +558,8 @@ if __name__ == "__main__":
 	# Create a player object
 	player = Player(200, 30, 'res/player.png')
 	player2 = Player(600, 30, 'res/player2.png')
+	player.setupKeys(K_LEFT, K_RIGHT, K_UP, K_DOWN)
+	player2.setupKeys(K_a, K_d, K_w, K_s)
 	
 	# Add the player to the game
 	g.addPlayer(player)
