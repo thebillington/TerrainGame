@@ -33,8 +33,8 @@ class Game(object):
 		# Create a list to store the players
 		self.players = []
 		
-		self.powerups = [RadiusPowerup(pygame.image.load('res/powerUp1.png'))]
-		self.powerups[0].setPos(400, 100)
+		self.powerups = [RadiusPowerup(pygame.image.load('res/powerUp1.png')), HitsPowerup(pygame.image.load('res/powerUp2.png'))]
+		self.powerups[1].setPos(400, 100)
 		
 	# Function to draw the initial screen
 	def drawMap(self):
@@ -131,7 +131,7 @@ class Game(object):
 			if self.players[0].bombCooldown():
 			
 				# Create a projectile
-				self.players[0].projectiles.append(Projectile(pygame.Rect(self.players[0].rect.x + 3, self.players[0].rect.y, 6, 6), [self.players[0].direction, 0], 0.1, 3, self.players[0].blastRadius, False))
+				self.players[0].projectiles.append(Projectile(pygame.Rect(self.players[0].rect.x + 3, self.players[0].rect.y, 6, 6), [self.players[0].direction, 0], 0.1, 3, self.players[0].blastRadius, self.players[0].hits))
 				
 				if not self.players[0].uses[0] == 0:
 					self.players[0].uses[0] -= 1
@@ -139,6 +139,13 @@ class Game(object):
 				if self.players[0].uses[0] == 0:
 					self.players[0].blastRadius = 8
 					
+				if not self.players[0].uses[1] == 0:
+					self.players[0].uses[1] -= 1
+					
+				if self.players[0].uses[1] == 0:
+					self.players[0].hits = 0
+					
+				print(self.players[0].hits)
 				
 				# Add the projectile to the game
 				for x in self.players[0].projectiles:
@@ -244,9 +251,11 @@ class Game(object):
 						pygame.draw.rect(self.screen, (0, 0, 0), p)
 					
 					# Check if the projectile is a one hit
-					if self.projectile.oneHit:
+					if self.projectile.oneHit == 0:
 						self.projectile = None
 						break
+						
+					self.projectile.oneHit -= 1
   
 	# Function to resolve player collisions
 	def playerCollision(self):
@@ -457,7 +466,11 @@ class Player(object):
 		# Create an array to hold the two types of powerups uses
 		self.uses = [0, 0]
 		
+		# An int to stop the bombs from being spamed multiple times
 		self.cooldown = 0
+		
+		# An int to hold how many times a projectile can hit before deipersing
+		self.hits = 0
 		
 	# Function to update the player
 	def update(self):
@@ -481,7 +494,10 @@ class Player(object):
 			self.rect.x += 2 * self.speedX
 			
 		if self.uses[0] >= 1:
-			self.blastRadius = 20 
+			self.blastRadius = 20
+			
+		if self.uses[1] >= 1:
+			self.hits = 1
 		
 	# Function to make a player jump
 	def jump(self):
@@ -497,11 +513,11 @@ class Player(object):
 
 	def bombCooldown(self):
 		
-		if not self.cooldown == 5:
+		if not self.cooldown == 10:
 			
 			self.cooldown += 1
 			
-		if self.cooldown == 5:
+		if self.cooldown == 10:
 			
 			self.cooldown = 0
 			return True
@@ -516,7 +532,6 @@ class Powerup(object):
 		
 		self.image = image
 		self.rect = self.image.get_rect()
-		print(self.rect)
 		
 		self.rect.x = x
 		self.rect.y = y
@@ -542,6 +557,19 @@ class RadiusPowerup(Powerup):
 	def power(self, player):
 		
 		player.uses[0] = self.uses
+		player.uses[1] = 0
+		
+class HitsPowerup(Powerup):
+	
+	def __init__(self, image, uses=3, x=0, y=0):
+		super(HitsPowerup, self).__init__(image, x, y)
+		
+		self.uses = uses
+		
+	def power(self, player):
+		
+		player.uses[1] = self.uses
+		player.uses[0] = 0
 	
 # Run an instance of the game
 if __name__ == "__main__":
