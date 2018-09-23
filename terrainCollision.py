@@ -95,20 +95,20 @@ class Game(object):
 		# If left arrow
 		if keys[K_LEFT]:
 			
-			# Remove the player current position
-			pygame.draw.rect(self.screen, self.bg, self.players[0].rect)
-			
-			# Move player 1 left
-			self.players[0].rect.x -= self.players[0].speedX
+			# Set speed to move left
+			self.players[0].direction = -1
 			
 		# If right arrow
-		if keys[K_RIGHT]:
+		elif keys[K_RIGHT]:
 			
-			# Remove the player current position
-			pygame.draw.rect(self.screen, self.bg, self.players[0].rect)
+			# Set speed to move right
+			self.players[0].direction = 1
 			
-			# Move player 1 right
-			self.players[0].rect.x += self.players[0].speedX
+		# Otherwise reset player speed
+		else:
+			
+			# Set speed to 0
+			self.players[0].direction = 0
 			
 		# If up arrow
 		if keys[K_UP]:
@@ -197,14 +197,32 @@ class Game(object):
 				# If the player has collided with the bounding box
 				if player.rect.colliderect(t.bounds):
 					
-					# While the player is colliding with a pixel in the current terrain
-					while self.pixelCollision(player, t):
+					# Check if the player has collided horizontally or vertically
+					if not player.speedX == 0:
+					
+						# While the player is colliding with a pixel in the current terrain
+						while self.pixelCollision(player, t):
 						
-						# Set player to not be jumping
-						player.jumping = False
-						
-						# Move the player up by one pixel
-						player.rect.y -= 1
+							# Set player to not be jumping
+							player.jumping = False
+							
+							# Move the player away from the wall by one pixel
+							player.rect.x += player.direction
+							
+							# Move the player up by one pixel
+							player.rect.y -= 1
+							
+					# Otherwise resolve on y axis
+					else:
+					
+						# While the player is colliding with a pixel in the current terrain
+						while self.pixelCollision(player, t):
+							
+							# Set player to not be jumping
+							player.jumping = False
+							
+							# Move the player up by one pixel
+							player.rect.y -= 1
 						
 	# Function to return true when the player is colliding with a pixel within a bounding box
 	def pixelCollision(self, player, terrain):
@@ -338,8 +356,14 @@ class Player(object):
 		self.rect.x = x
 		self.rect.y = y
 		
+		# Store the horizontal speed
+		self.hzSpeed = 2
+		
+		# Set the direction of the player
+		self.direction = 0
+		
 		# Set the speed
-		self.speedX = 2
+		self.speedX = 0
 		self.speedY = 0
 		
 		# Set the physics variables
@@ -352,6 +376,9 @@ class Player(object):
 		
 	# Function to update the player
 	def update(self):
+			
+		# Remove the player current position
+		#pygame.draw.rect(self.screen, self.bg, self.players[0].rect)
 		
 		# Check whether the player needs to accelerate
 		if self.speedY < self.maxSpeed:
@@ -359,8 +386,14 @@ class Player(object):
 			# Accelerate
 			self.speedY += self.gravity
 			
-		# Move the player on the y axis
+		# Move the player
+		self.speedX = self.direction * self.hzSpeed
+		self.rect.x += self.speedX
 		self.rect.y += self.speedY
+			
+		# If we are jumping, move twice on x to make up for platform collision checks
+		if self.jumping:
+			self.rect.x += self.speedX
 		
 	# Function to make a player jump
 	def jump(self):
