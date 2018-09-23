@@ -33,6 +33,9 @@ class Game(object):
 		# Create a list to store the players
 		self.players = []
 		
+		self.powerups = [RadiusPowerup(pygame.image.load('res/powerUp1.png')), HitsPowerup(pygame.image.load('res/powerUp2.png'))]
+		self.powerups[1].setPos(400, 100)
+		
 	# Function to draw the initial screen
 	def drawMap(self):
 	
@@ -58,7 +61,13 @@ class Game(object):
 		if not self.projectile == None:
 		
 			# Draw the projectile
-			pygame.draw.rect(self.screen, (0, 255, 50), self.projectile.rect)
+			pygame.draw.rect(self.screen, (0, 0, 255), self.projectile.rect)
+		
+		for x in self.powerups:
+			
+			if x.active:
+				
+				x.draw(self.screen)
 		
 		# Update the display
 		pygame.display.flip()
@@ -119,9 +128,69 @@ class Game(object):
 		# If down arrow
 		if keys[K_DOWN]:
 			
-			# Have to add bomb functionality
+			if self.players[0].bombCooldown():
+			
+				# Create a projectile
+				self.players[0].projectiles.append(Projectile(pygame.Rect(self.players[0].rect.x + 3, self.players[0].rect.y, 6, 6), [self.players[0].direction, 0], 0.1, 3, self.players[0].blastRadius, self.players[0].hits))
+				
+				if not self.players[0].uses[0] == 0:
+					self.players[0].uses[0] -= 1
+					
+				if self.players[0].uses[0] == 0:
+					self.players[0].blastRadius = 8
+					
+				if not self.players[0].uses[1] == 0:
+					self.players[0].uses[1] -= 1
+					
+				if self.players[0].uses[1] == 0:
+					self.players[0].hits = 0
+					
+				print(self.players[0].hits)
+				
+				# Add the projectile to the game
+				for x in self.players[0].projectiles:
+					
+					g.setProjectile(x)
+				
+			
+		# If a key
+		if keys[K_a]:
+			
+			# Move the player to the left
+			self.players[1].direction = -1
+			
+		# Else if d key
+		elif keys[K_d]:
+			
+			# Move the player to the left
+			self.players[1].direction = 1
+		
+		# If neither a or d are pressed
+		else:
+			
+			# Stop all player movment
+			self.players[1].direction = 0
+			
+		# Check the w key
+		if keys[K_w]:
+			
+			#Peform jump
+			self.players[1].jump()
+			
+		# Check the down key
+		if keys[K_s]:
+			
+			# Need to add bomb functionality
 			print("Bomb dropped")
 		
+		for powerup in self.powerups:
+			
+			for player in self.players:
+				
+				if powerup.rect.colliderect(player.rect):
+					
+					powerup.power(player)
+					
 		# Update each player
 		for p in self.players:
 			
@@ -136,6 +205,7 @@ class Game(object):
 			
 			# Redraw the player
 			self.screen.blit(p.image, p.rect)
+			
 				
 	# Function to check if projectile has collided with any terrain
 	def projectileCollision(self):
@@ -181,9 +251,11 @@ class Game(object):
 						pygame.draw.rect(self.screen, (0, 0, 0), p)
 					
 					# Check if the projectile is a one hit
-					if self.projectile.oneHit:
+					if self.projectile.oneHit == 0:
 						self.projectile = None
 						break
+						
+					self.projectile.oneHit -= 1
   
 	# Function to resolve player collisions
 	def playerCollision(self):
@@ -386,6 +458,20 @@ class Player(object):
 		# Check whether the player is jumping
 		self.jumping = True
 		
+		#Create an array to hold the projectiles
+		self.projectiles = []
+		
+		# Create a int to hold the blast radius of inpacts
+		self.blastRadius = 8
+		# Create an array to hold the two types of powerups uses
+		self.uses = [0, 0]
+		
+		# An int to stop the bombs from being spamed multiple times
+		self.cooldown = 0
+		
+		# An int to hold how many times a projectile can hit before deipersing
+		self.hits = 0
+		
 	# Function to update the player
 	def update(self):
 			
@@ -406,6 +492,12 @@ class Player(object):
 		# If we are jumping, move twice on x to make up for platform collision checks
 		if self.jumping:
 			self.rect.x += 2 * self.speedX
+			
+		if self.uses[0] >= 1:
+			self.blastRadius = 20
+			
+		if self.uses[1] >= 1:
+			self.hits = 1
 		
 	# Function to make a player jump
 	def jump(self):
@@ -418,31 +510,87 @@ class Player(object):
 		
 			# Set the ySpeed to jump speed
 			self.speedY = self.jumpSpeed
+
+	def bombCooldown(self):
+		
+		if not self.cooldown == 10:
+			
+			self.cooldown += 1
+			
+		if self.cooldown == 10:
+			
+			self.cooldown = 0
+			return True
+			
+		return False
+
+# Create the powerup class		
+class Powerup(object):
+	
+	#Constructor
+	def __init__(self, image, x=0, y=0):
+		
+		self.image = image
+		self.rect = self.image.get_rect()
+		
+		self.rect.x = x
+		self.rect.y = y
+		
+		self.active = True
+		
+	def draw(self, surface):
+		
+		surface.blit(self.image, self.rect)
+		
+	def setPos(self, x, y):
+		
+		self.rect.x = x
+		self.rect.y = y
+		
+class RadiusPowerup(Powerup):
+	
+	def __init__(self, image, uses=3, x=0, y=0):
+		super(RadiusPowerup, self).__init__(image, x, y)
+		
+		self.uses = uses
+		
+	def power(self, player):
+		
+		player.uses[0] = self.uses
+		player.uses[1] = 0
+		
+class HitsPowerup(Powerup):
+	
+	def __init__(self, image, uses=3, x=0, y=0):
+		super(HitsPowerup, self).__init__(image, x, y)
+		
+		self.uses = uses
+		
+	def power(self, player):
+		
+		player.uses[1] = self.uses
+		player.uses[0] = 0
 	
 # Run an instance of the game
 if __name__ == "__main__":
 	
 	# Create a game object
 	g = Game()
-			
-	# Create a projectile
-	p = Projectile(pygame.Rect(750, 600, 6, 6), [-3, -7.33], 0.1, 3, 8, False)
-	
-	# Add the projectile to the game
-	g.setProjectile(p)
 	
 	# Create a player object
-	player = Player(400, 50, 'res/player.png')
+	player = Player(200, 30, 'res/player.png')
+	player2 = Player(600, 30, 'res/player2.png')
 	
 	# Add the player to the game
 	g.addPlayer(player)
+	g.addPlayer(player2)
 	
 	# Read the level data
 	g.readFileToTerrain("test.txt")
 	
 	# Draw the map
 	g.drawMap()
-
+	
 	# Game loop
 	while True:
 		g.update()
