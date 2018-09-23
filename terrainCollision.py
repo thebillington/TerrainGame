@@ -285,41 +285,38 @@ class Game(object):
 				# If the player has collided with the bounding box
 				if player.rect.colliderect(t.bounds):
 					
-					# Check if the player has collided horizontally or vertically
-					if not player.speedX == 0:
+					# Set collided to true for this terrain
+					collided = False
 					
-						# While the player is colliding with a pixel in the current terrain
-						while self.pixelCollision(player, t):
+					# Set number of y movements to 0
+					dy = 0
+					
+					# While the player is colliding with a pixel in the current terrain
+					while self.pixelCollision(player, t):
 						
-							# Set player to not be jumping
-							player.jumping = False
+						# Set collided to true
+						collided = True
+						
+						# Set player to not be jumping
+						player.jumping = False
+						
+						# Move the player up by one pixel
+						player.rect.y -= 1
+						
+						# Add one to the y movement
+						dy += 1
+						
+						# Check if dy is greater than 5
+						if dy > 6:
+							player.rect.y += dy
+							player.rect.x -= player.direction * player.hzSpeed
+							break
 							
-							# Check the terrain type and respond to horizontal
-							if t.terrainType == "horizontal":
-							
-								# Move the player away from the wall by one pixel toward direction of travel
-								player.rect.x += player.direction
-								
-								# Move the player up by one pixel
-								player.rect.y -= 1
-								
-							# Or vertical terrain
-							else:
-							
-								# Move the player away from the wall by one pixel against direction of travel
-								player.rect.x -= player.direction
-							
-					# Otherwise resolve on y axis
-					else:
-					
-						# While the player is colliding with a pixel in the current terrain
-						while self.pixelCollision(player, t):
-							
-							# Set player to not be jumping
-							player.jumping = False
-							
-							# Move the player up by one pixel
-							player.rect.y -= 1
+					# If collided with this wall, redraw it
+					if collided:
+						pygame.draw.rect(self.screen, self.bg, t.bounds)
+						for p in t.pixels:
+							pygame.draw.rect(self.screen, (0, 0, 0), p)
 						
 	# Function to return true when the player is colliding with a pixel within a bounding box
 	def pixelCollision(self, player, terrain):
@@ -378,28 +375,27 @@ class Game(object):
 	# Function to read data from file and create terrain objects
 	def readFileToTerrain(self, fileName):
                 
-                # create new file object with read mode
-                file = open(fileName)
-                
-                # create a list of the lines in the text file
-                fileLines = file.read().splitlines()
+		# create new file object with read mode
+		file = open(fileName)
+		
+		# create a list of the lines in the text file
+		fileLines = file.read().splitlines()
 
-                #iterate through each line in the file
-                for line in fileLines:
-                        #seperate the values between commas
-                        fields = line.split(",")
-                        
-                        # Create a terrain object
-                        t = Terrain(pygame.Rect(int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3])), fields[4])
-	
-                        # Add some pixels to the terrain
-                        for i in range(int(fields[2])):
-                                for j in range(int(fields[3])):
-                                        t.addPixel(pygame.Rect(t.bounds.left + i, t.bounds.top + j, 1, 1))
+		#iterate through each line in the file
+		for line in fileLines:
+			#seperate the values between commas
+			fields = line.split(",")
+			
+			# Create a terrain object
+			t = Terrain(pygame.Rect(int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3])), fields[4])
 
-                        #add to the games terrain
-                        self.addTerrain(t)
-	
+			# Add some pixels to the terrain
+			for i in range(int(fields[2])):
+				for j in range(int(fields[3])):
+					t.addPixel(pygame.Rect(t.bounds.left + i, t.bounds.top + j, 1, 1))
+
+			#add to the games terrain
+			self.addTerrain(t)
 				
 # Class to hold all the 'pixels' in a piece of terrain
 class Terrain(object):
@@ -506,10 +502,6 @@ class Player(object):
 		self.speedX = self.direction * self.hzSpeed
 		self.rect.x += self.speedX
 		self.rect.y += self.speedY
-			
-		# If we are jumping, move twice on x to make up for platform collision checks
-		if self.jumping:
-			self.rect.x += 2 * self.speedX
 			
 		if self.uses[0] >= 1:
 			self.blastRadius = 20
