@@ -33,6 +33,9 @@ class Game(object):
 		# Create a list to store the players
 		self.players = []
 		
+		self.powerups = [RadiusPowerup(pygame.image.load('res/powerUp1.png'))]
+		self.powerups[0].setPos(400, 100)
+		
 	# Function to draw the initial screen
 	def drawMap(self):
 	
@@ -59,6 +62,12 @@ class Game(object):
 		
 			# Draw the projectile
 			pygame.draw.rect(self.screen, (0, 0, 255), self.projectile.rect)
+		
+		for x in self.powerups:
+			
+			if x.active:
+				
+				x.draw(self.screen)
 		
 		# Update the display
 		pygame.display.flip()
@@ -119,13 +128,23 @@ class Game(object):
 		# If down arrow
 		if keys[K_DOWN]:
 			
-			# Create a projectile
-			self.players[0].projectiles.append(Projectile(pygame.Rect(self.players[0].rect.x + 3, self.players[0].rect.y, 6, 6), [self.players[0].direction, 0], 0.1, 3, 8, False))
+			if self.players[0].bombCooldown():
 			
-			# Add the projectile to the game
-			for x in self.players[0].projectiles:
+				# Create a projectile
+				self.players[0].projectiles.append(Projectile(pygame.Rect(self.players[0].rect.x + 3, self.players[0].rect.y, 6, 6), [self.players[0].direction, 0], 0.1, 3, self.players[0].blastRadius, False))
 				
-				g.setProjectile(x)
+				if not self.players[0].uses[0] == 0:
+					self.players[0].uses[0] -= 1
+					
+				if self.players[0].uses[0] == 0:
+					self.players[0].blastRadius = 8
+					
+				
+				# Add the projectile to the game
+				for x in self.players[0].projectiles:
+					
+					g.setProjectile(x)
+				
 			
 		# If a key
 		if keys[K_a]:
@@ -157,6 +176,14 @@ class Game(object):
 			# Need to add bomb functionality
 			print("Bomb dropped")
 		
+		for powerup in self.powerups:
+			
+			for player in self.players:
+				
+				if powerup.rect.colliderect(player.rect):
+					
+					powerup.power(player)
+					
 		# Update each player
 		for p in self.players:
 			
@@ -425,6 +452,13 @@ class Player(object):
 		#Create an array to hold the projectiles
 		self.projectiles = []
 		
+		# Create a int to hold the blast radius of inpacts
+		self.blastRadius = 8
+		# Create an array to hold the two types of powerups uses
+		self.uses = [0, 0]
+		
+		self.cooldown = 0
+		
 	# Function to update the player
 	def update(self):
 			
@@ -445,6 +479,9 @@ class Player(object):
 		# If we are jumping, move twice on x to make up for platform collision checks
 		if self.jumping:
 			self.rect.x += 2 * self.speedX
+			
+		if self.uses[0] >= 1:
+			self.blastRadius = 20 
 		
 	# Function to make a player jump
 	def jump(self):
@@ -457,6 +494,54 @@ class Player(object):
 		
 			# Set the ySpeed to jump speed
 			self.speedY = self.jumpSpeed
+
+	def bombCooldown(self):
+		
+		if not self.cooldown == 5:
+			
+			self.cooldown += 1
+			
+		if self.cooldown == 5:
+			
+			self.cooldown = 0
+			return True
+			
+		return False
+
+# Create the powerup class		
+class Powerup(object):
+	
+	#Constructor
+	def __init__(self, image, x=0, y=0):
+		
+		self.image = image
+		self.rect = self.image.get_rect()
+		print(self.rect)
+		
+		self.rect.x = x
+		self.rect.y = y
+		
+		self.active = True
+		
+	def draw(self, surface):
+		
+		surface.blit(self.image, self.rect)
+		
+	def setPos(self, x, y):
+		
+		self.rect.x = x
+		self.rect.y = y
+		
+class RadiusPowerup(Powerup):
+	
+	def __init__(self, image, uses=3, x=0, y=0):
+		super(RadiusPowerup, self).__init__(image, x, y)
+		
+		self.uses = uses
+		
+	def power(self, player):
+		
+		player.uses[0] = self.uses
 	
 # Run an instance of the game
 if __name__ == "__main__":
@@ -477,7 +562,7 @@ if __name__ == "__main__":
 	
 	# Draw the map
 	g.drawMap()
-
+	
 	# Game loop
 	while True:
 		g.update()
