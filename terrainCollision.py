@@ -206,11 +206,20 @@ class Game(object):
 							# Set player to not be jumping
 							player.jumping = False
 							
-							# Move the player away from the wall by one pixel
-							player.rect.x += player.direction
+							# Check the terrain type and respond to horizontal
+							if t.terrainType == "horizontal":
 							
-							# Move the player up by one pixel
-							player.rect.y -= 1
+								# Move the player away from the wall by one pixel toward direction of travel
+								player.rect.x += player.direction
+								
+								# Move the player up by one pixel
+								player.rect.y -= 1
+								
+							# Or vertical terrain
+							else:
+							
+								# Move the player away from the wall by one pixel against direction of travel
+								player.rect.x -= player.direction
 							
 					# Otherwise resolve on y axis
 					else:
@@ -293,7 +302,7 @@ class Game(object):
                         fields = line.split(",")
                         
                         # Create a terrain object
-                        t = Terrain(pygame.Rect(int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3])))
+                        t = Terrain(pygame.Rect(int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3])), fields[4])
 	
                         # Add some pixels to the terrain
                         for i in range(int(fields[2])):
@@ -308,13 +317,16 @@ class Game(object):
 class Terrain(object):
 	
 	# Constructor
-	def __init__(self, locationRect):
+	def __init__(self, locationRect, terrainType):
 		
 		# List to hold all of the 'pixels'
 		self.pixels = []
 		
 		# Store a rectangle to be the bounding box of the terrain
 		self.bounds = locationRect
+		
+		# Store the type of the terrain (horizontal or vertical)
+		self.terrainType = terrainType
 		
 	# Function to add a pixel to the terrain
 	def addPixel(self, pixel):
@@ -393,7 +405,7 @@ class Player(object):
 			
 		# If we are jumping, move twice on x to make up for platform collision checks
 		if self.jumping:
-			self.rect.x += self.speedX
+			self.rect.x += 2 * self.speedX
 		
 	# Function to make a player jump
 	def jump(self):
@@ -412,9 +424,6 @@ if __name__ == "__main__":
 	
 	# Create a game object
 	g = Game()
-	
-	# Create a terrain object
-	t = Terrain(pygame.Rect(0, g.height - 4, g.width, 4))
 			
 	# Create a projectile
 	p = Projectile(pygame.Rect(750, 600, 6, 6), [-3, -7.33], 0.1, 3, 8, False)
