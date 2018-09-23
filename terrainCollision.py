@@ -58,7 +58,7 @@ class Game(object):
 		if not self.projectile == None:
 		
 			# Draw the projectile
-			pygame.draw.rect(self.screen, (0, 255, 50), self.projectile.rect)
+			pygame.draw.rect(self.screen, (0, 0, 255), self.projectile.rect)
 		
 		# Update the display
 		pygame.display.flip()
@@ -119,7 +119,42 @@ class Game(object):
 		# If down arrow
 		if keys[K_DOWN]:
 			
-			# Have to add bomb functionality
+			# Create a projectile
+			self.players[0].projectiles.append(Projectile(pygame.Rect(self.players[0].rect.x + 3, self.players[0].rect.y, 6, 6), [self.players[0].direction, 0], 0.1, 3, 8, False))
+			
+			# Add the projectile to the game
+			for x in self.players[0].projectiles:
+				
+				g.setProjectile(x)
+			
+		# If a key
+		if keys[K_a]:
+			
+			# Move the player to the left
+			self.players[1].direction = -1
+			
+		# Else if d key
+		elif keys[K_d]:
+			
+			# Move the player to the left
+			self.players[1].direction = 1
+		
+		# If neither a or d are pressed
+		else:
+			
+			# Stop all player movment
+			self.players[1].direction = 0
+			
+		# Check the w key
+		if keys[K_w]:
+			
+			#Peform jump
+			self.players[1].jump()
+			
+		# Check the down key
+		if keys[K_s]:
+			
+			# Need to add bomb functionality
 			print("Bomb dropped")
 		
 		# Update each player
@@ -136,6 +171,7 @@ class Game(object):
 			
 			# Redraw the player
 			self.screen.blit(p.image, p.rect)
+			
 				
 	# Function to check if projectile has collided with any terrain
 	def projectileCollision(self):
@@ -386,6 +422,9 @@ class Player(object):
 		# Check whether the player is jumping
 		self.jumping = True
 		
+		#Create an array to hold the projectiles
+		self.projectiles = []
+		
 	# Function to update the player
 	def update(self):
 			
@@ -424,18 +463,14 @@ if __name__ == "__main__":
 	
 	# Create a game object
 	g = Game()
-			
-	# Create a projectile
-	p = Projectile(pygame.Rect(750, 600, 6, 6), [-3, -7.33], 0.1, 3, 8, False)
-	
-	# Add the projectile to the game
-	g.setProjectile(p)
 	
 	# Create a player object
-	player = Player(400, 50, 'res/player.png')
+	player = Player(200, 30, 'res/player.png')
+	player2 = Player(600, 30, 'res/player2.png')
 	
 	# Add the player to the game
 	g.addPlayer(player)
+	g.addPlayer(player2)
 	
 	# Read the level data
 	g.readFileToTerrain("test.txt")
