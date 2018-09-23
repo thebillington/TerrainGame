@@ -27,9 +27,6 @@ class Game(object):
 		# Create a list to store all of the pieces of terrain
 		self.terrain = []
 		
-		# Create an object to store the projectile
-		self.projectile = None
-		
 		# Create a list to store the players
 		self.players = []
 		
@@ -54,23 +51,18 @@ class Game(object):
 		self.exit()
 		
 		# Update the proejectile
-		self.updateProjectile()
+		self.updateProjectiles()
 		
 		# Update the players
 		self.updatePlayers()
 		
-		# Check that there is a projectile to draw
-		
-		# Check if there is a projectile
-		for x in self.projectiles:
+		# For each projectile
+		for p in self.projectiles:
 			
-			self.projectile = x
+			# Draw the projectile
+			pygame.draw.rect(self.screen, (0, 0, 255), p.rect)
 		
-			if not self.projectile == None:
-			
-				# Draw the projectile
-				pygame.draw.rect(self.screen, (0, 0, 255), self.projectile.rect)
-		
+		# Draw the powerups
 		for x in self.powerups:
 			
 			if x.active:
@@ -83,28 +75,25 @@ class Game(object):
 		# Tick
 		self.clock.tick(60)
 		
-	# Function to update the position of the projectile
-	def updateProjectile(self):
+	# Function to update the position of the projectiles
+	def updateProjectiles(self):
 		
 		# Check if there is a projectile
-		for x in self.projectiles:
+		for p in self.projectiles:
 			
-			self.projectile = x
-			if not self.projectile == None:
+			# Draw the projectile
+			pygame.draw.rect(self.screen, self.bg, p.rect)
+		
+			# Move the projectile
+			p.rect.left += p.speed[0]
+			p.rect.top += p.speed[1]
 			
-				# Draw the projectile
-				pygame.draw.rect(self.screen, self.bg, self.projectile.rect)
-			
-				# Move the projectile
-				self.projectile.rect.left += self.projectile.speed[0]
-				self.projectile.rect.top += self.projectile.speed[1]
-				
-				# Update gravity
-				if self.projectile.speed[1] < self.projectile.maxSpeed:
-					self.projectile.speed[1] += self.projectile.gravity
-			
-				# Check for projectile collision
-				self.projectileCollision()
+			# Update gravity
+			if p.speed[1] < p.maxSpeed:
+				p.speed[1] += p.gravity
+		
+		# Check for projectile collision
+		self.projectileCollisions()
 			
 	# Function to update the players
 	def updatePlayers(self):
@@ -220,7 +209,7 @@ class Game(object):
 				self.players[x].ableToFire = False
 		
 	# Function to check if projectile has collided with any terrain
-	def projectileCollision(self):
+	def projectileCollisions(self):
 		
 		# Set px and py to none
 		px = None
@@ -229,18 +218,17 @@ class Game(object):
 		# Iterate over all the terrain
 		for t in self.terrain:
 			
-			for x in range(len(self.projectiles)):
-				
-				self.projectile = self.projectiles[x]
+			# Iterate backwards over the projectiles
+			for i in range(len(self.projectiles) - 1, -1, -1):
 			
 				# If the projectile has collided with the bounding box
-				if self.projectile.rect.colliderect(t.bounds):
+				if self.projectiles[i].rect.colliderect(t.bounds):
 					
 					# Check each of the pixels in the terrain
 					for p in t.pixels:
 						
 						# If the pixel has collided with the projectile
-						if self.projectile.rect.colliderect(p):
+						if self.projectiles[i].rect.colliderect(p):
 							
 							# Store the pixels location
 							px = p.left
@@ -253,13 +241,13 @@ class Game(object):
 					if not px == None:
 						
 						# Check each pixel to see whether it collided, and if so delete it
-						for i in range(len(t.pixels) - 1, -1, -1):
+						for j in range(len(t.pixels) - 1, -1, -1):
 							
 							# If the pixel is in range of the blast zone
-							if pythagoras(t.pixels[i].left, t.pixels[i].top, px, py) < self.projectile.blastRadius:
+							if pythagoras(t.pixels[j].left, t.pixels[j].top, px, py) < self.projectiles[i].blastRadius:
 								
 								# Delete the pixel
-								t.pixels.pop(i)
+								t.pixels.pop(j)
 						
 						# Redraw this terrain
 						pygame.draw.rect(self.screen, self.bg, t.bounds)
@@ -267,11 +255,11 @@ class Game(object):
 							pygame.draw.rect(self.screen, (0, 0, 0), p)
 						
 						# Check if the projectile is a one hit
-						if self.projectile.oneHit == 0:
-							del self.projectiles[x]
+						if self.projectiles[i].hits == 0:
+							self.projectiles.pop(i)
 							break
 							
-						self.projectile.oneHit -= 1
+						self.projectiles[i].hits -= 1
   
 	# Function to resolve player collisions
 	def playerCollision(self):
@@ -422,7 +410,7 @@ class Terrain(object):
 class Projectile(object):
 	
 	# Constructor
-	def __init__(self, rect, speed, gravity, maxSpeed, collisionRadius, oneHit):
+	def __init__(self, rect, speed, gravity, maxSpeed, collisionRadius, hits):
 		
 		# Fields
 		self.rect = rect
@@ -430,7 +418,7 @@ class Projectile(object):
 		self.gravity = gravity
 		self.maxSpeed = maxSpeed
 		self.blastRadius = collisionRadius
-		self.oneHit = oneHit
+		self.hits = hits
 		
 # Pythagoras function
 def pythagoras(xOne, yOne, xTwo, yTwo):
