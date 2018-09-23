@@ -36,6 +36,8 @@ class Game(object):
 		self.powerups = [RadiusPowerup(pygame.image.load('res/powerUp1.png')), HitsPowerup(pygame.image.load('res/powerUp2.png'))]
 		self.powerups[1].setPos(400, 100)
 		
+		self.projectiles = []
+		
 	# Function to draw the initial screen
 	def drawMap(self):
 	
@@ -58,10 +60,16 @@ class Game(object):
 		self.updatePlayers()
 		
 		# Check that there is a projectile to draw
-		if not self.projectile == None:
 		
-			# Draw the projectile
-			pygame.draw.rect(self.screen, (0, 0, 255), self.projectile.rect)
+		# Check if there is a projectile
+		for x in self.projectiles:
+			
+			self.projectile = x
+		
+			if not self.projectile == None:
+			
+				# Draw the projectile
+				pygame.draw.rect(self.screen, (0, 0, 255), self.projectile.rect)
 		
 		for x in self.powerups:
 			
@@ -79,21 +87,24 @@ class Game(object):
 	def updateProjectile(self):
 		
 		# Check if there is a projectile
-		if not self.projectile == None:
-		
-			# Draw the projectile
-			pygame.draw.rect(self.screen, self.bg, self.projectile.rect)
-		
-			# Move the projectile
-			self.projectile.rect.left += self.projectile.speed[0]
-			self.projectile.rect.top += self.projectile.speed[1]
+		for x in self.projectiles:
 			
-			# Update gravity
-			if self.projectile.speed[1] < self.projectile.maxSpeed:
-				self.projectile.speed[1] += self.projectile.gravity
-		
-			# Check for projectile collision
-			self.projectileCollision()
+			self.projectile = x
+			if not self.projectile == None:
+			
+				# Draw the projectile
+				pygame.draw.rect(self.screen, self.bg, self.projectile.rect)
+			
+				# Move the projectile
+				self.projectile.rect.left += self.projectile.speed[0]
+				self.projectile.rect.top += self.projectile.speed[1]
+				
+				# Update gravity
+				if self.projectile.speed[1] < self.projectile.maxSpeed:
+					self.projectile.speed[1] += self.projectile.gravity
+			
+				# Check for projectile collision
+				self.projectileCollision()
 			
 	# Function to update the players
 	def updatePlayers(self):
@@ -128,31 +139,8 @@ class Game(object):
 		# If down arrow
 		if keys[K_DOWN]:
 			
-			if self.players[0].bombCooldown():
-			
-				# Create a projectile
-				self.players[0].projectiles.append(Projectile(pygame.Rect(self.players[0].rect.x + 3, self.players[0].rect.y, 6, 6), [self.players[0].direction, 0], 0.1, 3, self.players[0].blastRadius, self.players[0].hits))
+			self.fire(0)
 				
-				if not self.players[0].uses[0] == 0:
-					self.players[0].uses[0] -= 1
-					
-				if self.players[0].uses[0] == 0:
-					self.players[0].blastRadius = 8
-					
-				if not self.players[0].uses[1] == 0:
-					self.players[0].uses[1] -= 1
-					
-				if self.players[0].uses[1] == 0:
-					self.players[0].hits = 0
-					
-				print(self.players[0].hits)
-				
-				# Add the projectile to the game
-				for x in self.players[0].projectiles:
-					
-					g.setProjectile(x)
-				
-			
 		# If a key
 		if keys[K_a]:
 			
@@ -181,15 +169,17 @@ class Game(object):
 		if keys[K_s]:
 			
 			# Need to add bomb functionality
-			print("Bomb dropped")
+			self.fire(1)
 		
 		for powerup in self.powerups:
 			
-			for player in self.players:
+			if powerup.active:
+			
+				for player in self.players:
 				
-				if powerup.rect.colliderect(player.rect):
+					if powerup.rect.colliderect(player.rect):
 					
-					powerup.power(player)
+						powerup.power(player)
 					
 		# Update each player
 		for p in self.players:
@@ -206,7 +196,29 @@ class Game(object):
 			# Redraw the player
 			self.screen.blit(p.image, p.rect)
 			
+	def fire(self, x):
+		
+		if self.players[x].bombCooldown():
+			
+				# Create a projectile
+				p = Projectile(pygame.Rect(self.players[x].rect.x + 3, self.players[x].rect.y, 6, 6), [self.players[x].direction, 0], 0.1, 3, self.players[x].blastRadius, self.players[x].hits)
 				
+				if not self.players[x].uses[0] == 0:
+					self.players[x].uses[0] -= 1
+					
+				if self.players[x].uses[0] == 0:
+					self.players[x].blastRadius = 8
+					
+				if not self.players[x].uses[1] == 0:
+					self.players[x].uses[1] -= 1
+					
+				if self.players[x].uses[1] == 0:
+					self.players[x].hits = 0
+					
+				g.addProjectile(p)
+				
+				self.players[x].ableToFire = False
+		
 	# Function to check if projectile has collided with any terrain
 	def projectileCollision(self):
 		
@@ -217,45 +229,49 @@ class Game(object):
 		# Iterate over all the terrain
 		for t in self.terrain:
 			
-			# If the projectile has collided with the bounding box
-			if self.projectile.rect.colliderect(t.bounds):
+			for x in range(len(self.projectiles)):
 				
-				# Check each of the pixels in the terrain
-				for p in t.pixels:
+				self.projectile = self.projectiles[x]
+			
+				# If the projectile has collided with the bounding box
+				if self.projectile.rect.colliderect(t.bounds):
 					
-					# If the pixel has collided with the projectile
-					if self.projectile.rect.colliderect(p):
-						
-						# Store the pixels location
-						px = p.left
-						py = p.top
-						
-						# Break the loop
-						break
-						
-				# Check whether there was a collision between any pixels
-				if not px == None:
-					
-					# Check each pixel to see whether it collided, and if so delete it
-					for i in range(len(t.pixels) - 1, -1, -1):
-						
-						# If the pixel is in range of the blast zone
-						if pythagoras(t.pixels[i].left, t.pixels[i].top, px, py) < self.projectile.blastRadius:
-							
-							# Delete the pixel
-							t.pixels.pop(i)
-					
-					# Redraw this terrain
-					pygame.draw.rect(self.screen, self.bg, t.bounds)
+					# Check each of the pixels in the terrain
 					for p in t.pixels:
-						pygame.draw.rect(self.screen, (0, 0, 0), p)
-					
-					# Check if the projectile is a one hit
-					if self.projectile.oneHit == 0:
-						self.projectile = None
-						break
 						
-					self.projectile.oneHit -= 1
+						# If the pixel has collided with the projectile
+						if self.projectile.rect.colliderect(p):
+							
+							# Store the pixels location
+							px = p.left
+							py = p.top
+							
+							# Break the loop
+							break
+							
+					# Check whether there was a collision between any pixels
+					if not px == None:
+						
+						# Check each pixel to see whether it collided, and if so delete it
+						for i in range(len(t.pixels) - 1, -1, -1):
+							
+							# If the pixel is in range of the blast zone
+							if pythagoras(t.pixels[i].left, t.pixels[i].top, px, py) < self.projectile.blastRadius:
+								
+								# Delete the pixel
+								t.pixels.pop(i)
+						
+						# Redraw this terrain
+						pygame.draw.rect(self.screen, self.bg, t.bounds)
+						for p in t.pixels:
+							pygame.draw.rect(self.screen, (0, 0, 0), p)
+						
+						# Check if the projectile is a one hit
+						if self.projectile.oneHit == 0:
+							del self.projectiles[x]
+							break
+							
+						self.projectile.oneHit -= 1
   
 	# Function to resolve player collisions
 	def playerCollision(self):
@@ -346,10 +362,10 @@ class Game(object):
 		self.players.append(player)
 		
 	# Function to create a projectile
-	def setProjectile(self, projectile):
+	def addProjectile(self, projectile):
 		
 		# Set projectile
-		self.projectile = projectile
+		self.projectiles.append(projectile)
         
 	# Function to check for user closing the window
 	def exit(self):
@@ -472,6 +488,8 @@ class Player(object):
 		# An int to hold how many times a projectile can hit before deipersing
 		self.hits = 0
 		
+		self.ableToFire = True
+		
 	# Function to update the player
 	def update(self):
 			
@@ -513,13 +531,19 @@ class Player(object):
 
 	def bombCooldown(self):
 		
-		if not self.cooldown == 10:
-			
-			self.cooldown += 1
+		if not self.ableToFire:
+		
+			if not self.cooldown == 10:
+				
+				self.cooldown += 1
 			
 		if self.cooldown == 10:
 			
+			self.ableToFire = True
 			self.cooldown = 0
+			
+		if self.ableToFire:
+			
 			return True
 			
 		return False
